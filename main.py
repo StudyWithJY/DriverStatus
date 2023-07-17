@@ -18,7 +18,9 @@ plt.imshow(plt.imread("./KaggleDataSet/train/yawn/1.jpg"))
 
 
 def face_for_yawn(direc="./KaggleDataSet/train",
-                  MouthPath='./KaggleDataSet/haarcascade_mcs_mouth.xml', face_cas_path = './KaggleDataSet/haarcascade_frontalface_default.xml', eye_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
+                  MouthPath='./KaggleDataSet/haarcascade_mcs_mouth.xml',
+                  face_cas_path = './KaggleDataSet/haarcascade_frontalface_default.xml',
+                  eye_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
 ):
     yaw_no = []
     IMG_SIZE = 145
@@ -33,33 +35,35 @@ def face_for_yawn(direc="./KaggleDataSet/train",
             gray = cv2.cvtColor(image_array, cv2.COLOR_BGR2GRAY)
             faces = face_cascade.detectMultiScale(gray, 1.3, 5)
             for (x, y, w, h) in faces:
-                img = cv2.rectangle(image_array, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                img = cv2.rectangle(image_array, (x, y), (x + w, y + h), (0, 0, 255), 2)
                 roi_color = img[y:y + h, x:x + w]
+                roi_gray = gray[y:y + h, x:x + w]
+                # TODO: 수정하기
                 resized_array = cv2.resize(roi_color, (IMG_SIZE, IMG_SIZE))
-                yaw_no.append([resized_array, class_num1]) #### 수정하기
+                yaw_no.append([resized_array, class_num1])
 
                 mouth_cascade = cv2.CascadeClassifier(MouthPath)
-                eyes = eye_cascade.detectMultiScale(img, 1.3, 5)
-                mouth = mouth_cascade.detectMultiScale(img, 1.5, 11)
+                eyes = eye_cascade.detectMultiScale(roi_gray, 1.3, 5)
+                mouth = mouth_cascade.detectMultiScale(roi_gray, 1.5, 11)
 
                 for (ex, ey, ew, eh) in eyes:
-                    cv2.rectangle(img, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
+                    cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
                 for (mx, my, mw, mh) in mouth:
-                    cv2.rectangle(img, (mx, my), (mx + mw, my + mh), (255, 0, 0), 2)
+                    cv2.rectangle(roi_color, (mx, my), (mx + mw, my + mh), (255, 0, 0), 2)
 
                 cv2.imshow('face, eyes and mouth detected image', img)
                 cv2.waitKey(1000)
                 print("Face detection is successful")
                 # break
 
-            for (x, y, w, h) in faces:
-                cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 2)
-                roi_gray = gray[y:y + h, x:x + w]
-                roi_color = img[y:y + h, x:x + w]
-
-                eyes = eye_cascade.detectMultiScale(roi_gray)
-                for (ex, ey, ew, eh) in eyes:
-                    cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
+            # for (x, y, w, h) in faces:
+            #     cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 2)
+            #     roi_gray = gray[y:y + h, x:x + w]
+            #     roi_color = img[y:y + h, x:x + w]
+            #
+            #     eyes = eye_cascade.detectMultiScale(roi_gray)
+            #     for (ex, ey, ew, eh) in eyes:
+            #         cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
 
 
 
