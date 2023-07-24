@@ -53,9 +53,9 @@ def face_for_yawn(direc="./KaggleDataSet/temp2",
                     mouth_img = roi_color[my:my + mh, mx:mx + mw]
                     resized_array = cv2.resize(mouth_img, (IMG_SIZE, IMG_SIZE))
                     yaw_noyawn.append([resized_array, class_num1])
-                    cv2.imshow('mouth detected image', mouth_img)
-                    cv2.waitKey(10)
-                    print("mouth detection is successful")
+                    # cv2.imshow('mouth detected image', mouth_img)
+                    # cv2.waitKey(10)
+                    # print("mouth detection is successful")
 
 
 
@@ -120,9 +120,9 @@ def get_eye(dir_path="./KaggleDataSet/train"):
                 img_array = cv2.imread(os.path.join(path, img), cv2.IMREAD_COLOR)
                 resized_array = cv2.resize(img_array, (IMG_SIZE, IMG_SIZE))
                 open_closed.append([resized_array, class_num])
-                cv2.imshow('eyes detected image', img_array)
-                cv2.waitKey(10)
-                print("eyes detection is successful")
+                # cv2.imshow('eyes detected image', img_array)
+                # cv2.waitKey(10)
+                # print("eyes detection is successful")
             except Exception as e:
                 print(e)
     return open_closed
@@ -277,8 +277,8 @@ model_e.add(MaxPooling2D(2, 2))
 model_e.add(Conv2D(32, (3, 3), activation="relu"))
 model_e.add(MaxPooling2D(2, 2))
 
-# model_e.add(Flatten())
-# model_e.add(Dropout(0.5))
+model_e.add(Flatten())
+model_e.add(Dropout(0.5))
 
 model_e.add(Dense(64, activation="relu"))
 model_e.add(Dense(1, activation="sigmoid"))
@@ -316,4 +316,4 @@ print("prediction", prediction)
 
 labels_new = ["Closed", "Open"]
 from sklearn.metrics import classification_report
-print("whole", classification_report(np.argmax(y_test, axis=1), prediction, target_names=labels_new))
+print("whole", classification_report(np.argmax(y_test), prediction, target_names=labels_new))
