@@ -5,7 +5,8 @@ import os
 import sys
 import math
 
-MIN_OPEN_DIST = 1
+MIN_EYE_OPEN_DIST = 5
+MIN_MOUTH_OPEN_DIST = 10
 
 def euclidean_distance(p0, p1): # both tuple coordinate
     return math.sqrt((p1[0] - p0[0]) ** 2 + (p1[1] - p0[1]) ** 2)
@@ -15,7 +16,7 @@ def is_eye_opened(eye_points): # list of tuple of coordinates
     distance0 = euclidean_distance(eye_points[1], eye_points[5])
     distance1 = euclidean_distance(eye_points[2], eye_points[4])
 
-    if distance0 > MIN_OPEN_DIST and distance1 > MIN_OPEN_DIST:
+    if distance0 > MIN_EYE_OPEN_DIST and distance1 > MIN_EYE_OPEN_DIST:
         return True
     else:
         return False
@@ -23,7 +24,7 @@ def is_eye_opened(eye_points): # list of tuple of coordinates
 def is_mouth_opened(mouth_points):
     distance = euclidean_distance(mouth_points[2], mouth_points[4])
 
-    if distance > MIN_OPEN_DIST:
+    if distance > MIN_MOUTH_OPEN_DIST:
         return True
     else:
         return False
@@ -50,6 +51,9 @@ for img_file in os.listdir(directory):
         mouth_points = [(point.x, point.y) for point in landmarks.parts()[61:67]]
         
         # 눈, 입 상태 확인
+        print("========================")
+        print("File: " + img_file)
+        
         left_eye_opened = is_eye_opened(left_eye_points)
         print("is left eye opened?: " + str(left_eye_opened))
         
