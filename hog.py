@@ -36,6 +36,8 @@ for img_file in os.listdir(directory):
     gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     
     # 얼굴 인식 진행
+    # download 'https://github.com/davisking/dlib-models/blob/master/shape_predictor_68_face_landmarks.dat.bz2'
+    # and decompress it
     predictor = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
     faces = detector(gray_img)
    
