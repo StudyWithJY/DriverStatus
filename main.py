@@ -1,7 +1,11 @@
 import os
+import pickle
+
 import cv2
+import keras
 import matplotlib.pyplot as plt
 import numpy as np  # linear algebra
+from keras.callbacks import EarlyStopping
 from keras.preprocessing.image import ImageDataGenerator
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
@@ -37,7 +41,7 @@ def face_for_yawn(direc="./KaggleDataSet/train",
                 mouth = mouth_cascade.detectMultiScale(roi_gray, 1.5, 11)
 
                 # for (ex, ey, ew, eh) in eyes:
-                    # cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
+                # cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
                 for (mx, my, mw, mh) in mouth:
                     # cv2.rectangle(roi_color, (mx, my), (mx + mw, my + mh), (255, 0, 0), 2)
                     mouth_img = roi_color[my:my + mh, mx:mx + mw]
@@ -51,10 +55,10 @@ def face_for_yawn(direc="./KaggleDataSet/train",
 
 
 def face_for_eye(direc="./KaggleDataSet/train",
-                  MouthPath='./KaggleDataSet/haarcascade_mcs_mouth.xml',
-                  face_cas_path = './KaggleDataSet/haarcascade_frontalface_default.xml',
-                  eye_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
-):
+                 MouthPath='./KaggleDataSet/haarcascade_mcs_mouth.xml',
+                 face_cas_path='./KaggleDataSet/haarcascade_frontalface_default.xml',
+                 eye_cascade=cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
+                 ):
     open_closed = []
     IMG_SIZE = 145
 
@@ -89,8 +93,8 @@ def face_for_eye(direc="./KaggleDataSet/train",
                 # for (mx, my, mw, mh) in mouth:
                 #     cv2.rectangle(roi_color, (mx, my), (mx + mw, my + mh), (255, 0, 0), 2)
 
-
     return open_closed
+
 
 # def get_eye(dir_path="./KaggleDataSet/train"):
 #     labels = ['Closed', 'Open']
@@ -115,8 +119,16 @@ def face_for_eye(direc="./KaggleDataSet/train",
 
 
 print("yawn_no_yawn 모델********************************************************************************")
-yawn_no_yawn = face_for_yawn()  # yawn 0, no_yawn 1
-yawn_no_yawn = np.array(yawn_no_yawn)
+
+is_pickle = True
+if not is_pickle:
+    yawn_no_yawn = face_for_yawn()  # yawn 0, no_yawn 1
+    yawn_no_yawn = np.array(yawn_no_yawn)
+    with open("(OpenCV)yawn_no_yawn.pickle", "wb") as f:
+        pickle.dump(yawn_no_yawn, f)
+else:
+    with open("(OpenCV)yawn_no_yawn.pickle", "rb") as f:
+        yawn_no_yawn = pickle.load(f)
 
 print("len(yawn_no_yawn) = ", len(yawn_no_yawn))
 
@@ -144,70 +156,95 @@ print("len(y_train) = ", len(y_train))
 print("len(y_test) = ", len(y_test))
 
 train_generator_m = ImageDataGenerator(rescale=1 / 255, zoom_range=0.2, horizontal_flip=True, rotation_range=30)
-test_generator_m = ImageDataGenerator(rescale=1 / 255)
+# test_generator_m = ImageDataGenerator(rescale=1 / 255)
 train_generator_m = train_generator_m.flow(np.array(X_train), y_train, shuffle=False)
-test_generator_m = test_generator_m.flow(np.array(X_test), y_test, shuffle=False)
+# test_generator_m = test_generator_m.flow(np.array(X_test), y_test, shuffle=False)
 
-model_m = Sequential()
+model_train = False
 
-model_m.add(Conv2D(256, (3, 3), activation="relu", input_shape=X_train.shape[1:]))
-model_m.add(MaxPooling2D(2, 2))
+if model_train:
+    model_m = Sequential()
 
-model_m.add(Conv2D(128, (3, 3), activation="relu"))
-model_m.add(MaxPooling2D(2, 2))
+    model_m.add(Conv2D(256, (3, 3), activation="relu", input_shape=X_train.shape[1:]))
+    model_m.add(MaxPooling2D(2, 2))
 
-model_m.add(Conv2D(64, (3, 3), activation="relu"))
-model_m.add(MaxPooling2D(2, 2))
+    model_m.add(Conv2D(128, (3, 3), activation="relu"))
+    model_m.add(MaxPooling2D(2, 2))
 
-model_m.add(Conv2D(32, (3, 3), activation="relu"))
-model_m.add(MaxPooling2D(2, 2))
+    model_m.add(Conv2D(64, (3, 3), activation="relu"))
+    model_m.add(MaxPooling2D(2, 2))
 
-model_m.add(Flatten())
-model_m.add(Dropout(0.5))
+    model_m.add(Conv2D(32, (3, 3), activation="relu"))
+    model_m.add(MaxPooling2D(2, 2))
 
-model_m.add(Dense(64, activation="relu"))
-model_m.add(Dense(1, activation="sigmoid"))
+    model_m.add(Flatten())
+    model_m.add(Dropout(0.5))
 
-model_m.compile(loss="binary_crossentropy", metrics=["accuracy"], optimizer="adam")
+    model_m.add(Dense(64, activation="relu"))
+    model_m.add(Dense(1, activation="sigmoid"))
 
-model_m.summary()
+    model_m.compile(loss='mean_squared_error', metrics=["accuracy"], optimizer="adam")
 
-history_m = model_m.fit(train_generator_m, epochs=10, validation_data=test_generator_m, shuffle=True,
-                        validation_steps=len(test_generator_m),
-                        steps_per_epoch=len(X_train))  # steps_per_epoch는 데이터셋 개수, steps_per_epoch = 240
+    model_m.summary()
 
-accuracy = history_m.history['accuracy']
-val_accuracy = history_m.history['val_accuracy']
-loss = history_m.history['loss']
-val_loss = history_m.history['val_loss']
-epochs = range(len(accuracy))
+    # early_stopping = EarlyStopping(monitor='val_loss', mode='min', patience=100)
+    # print(len(test_generator_m), len(X_test), len(y_test))
+    history_m = model_m.fit(train_generator_m, epochs=100, validation_data=(X_test, y_test), shuffle=True,
+                            batch_size=16, steps_per_epoch=len(X_train)//16)  # steps_per_epoch는 데이터셋 개수, steps_per_epoch=len(X_train)
 
-plt.clf()
+    accuracy = history_m.history['accuracy']
+    val_accuracy = history_m.history['val_accuracy']
+    loss = history_m.history['loss']
+    val_loss = history_m.history['val_loss']
+    epochs = range(len(accuracy))
 
-print("yawn_no_yawn model accuracy")
-plt.plot(epochs, accuracy, "b", label="trainning accuracy(m)")
-plt.plot(epochs, val_accuracy, "r", label="validation accuracy(m)")
-plt.legend()
-plt.show()
+    plt.clf()
 
-print("yawn_no_yawn model loss")
-plt.plot(epochs, loss, "b", label="trainning loss(m)")
-plt.plot(epochs, val_loss, "r", label="validation loss(m)")
-plt.legend()
-plt.show()
+    print("yawn_no_yawn model accuracy")
+    plt.plot(epochs, accuracy, "b", label="trainning accuracy")
+    plt.plot(epochs, val_accuracy, "r", label="validation accuracy")
+    plt.title("OpenCV accuracy(yawn, no_yawn)")
+    plt.xlabel("epochs")
+    plt.ylabel("accuracy")
+    plt.ylim(0, 1)
+    plt.legend()
+    plt.show()
 
-model_m.save("final_yawn_no_yawn.model")
+    print("yawn_no_yawn model loss")
+    plt.plot(epochs, loss, "b", label="trainning loss")
+    plt.plot(epochs, val_loss, "r", label="validation loss")
+    plt.title("OpenCV loss(yawn, no_yawn)")
+    plt.xlabel("epochs")
+    plt.ylabel("loss")
+    plt.ylim(0, 1)
+    plt.legend()
+    plt.show()
 
-prediction = model_m.predict_classes(X_test)
-print("yawn_no_yawn model prediction", prediction)
+    model_m.save("(OpenCV)yawn_no_yawn.model")
+else:
+    model_m = keras.models.load_model("(OpenCV)yawn_no_yawn.model")
+
+y_prob = model_m.predict(X_test, verbose=0)
+prediction = np.round(y_prob[:, 0]).astype(int)
+# print("yawn_no_yawn model prediction", prediction)
 
 labels_new = ["yawn", "no_yawn"]
+
+model_m.evaluate(X_test, y_test)
 
 print(classification_report(y_test, prediction, target_names=labels_new))
 
 print("open_closed 모델******************************************************************************************************")
-open_closed = face_for_eye()  # closed 2, open 3
-open_closed = np.array(open_closed)
+
+is_pickle = True
+if not is_pickle:
+    open_closed = face_for_eye()  # closed 2, open 3
+    open_closed = np.array(open_closed)
+    with open("(OpenCV)open_closed.pickle", "wb") as f:
+        pickle.dump(open_closed, f)
+else:
+    with open("(OpenCV)open_closed.pickle", "rb") as f:
+        open_closed = pickle.load(f)
 
 print("len(open_closed) = ", len(open_closed))
 
@@ -235,64 +272,79 @@ print("len(y_train) = ", len(y_train))
 print("len(y_test) = ", len(y_test))
 
 train_generator_e = ImageDataGenerator(rescale=1 / 255, zoom_range=0.2, horizontal_flip=True, rotation_range=30)
-test_generator_e = ImageDataGenerator(rescale=1 / 255)
+# test_generator_e = ImageDataGenerator(rescale=1 / 255)
 train_generator_e = train_generator_e.flow(np.array(X_train), y_train, shuffle=False)
-test_generator_e = test_generator_e.flow(np.array(X_test), y_test, shuffle=False)
+# test_generator_e = test_generator_e.flow(np.array(X_test), y_test, shuffle=False)
 
-model_e = Sequential()
+model_train = False
 
-model_e.add(Conv2D(256, (3, 3), activation="relu", input_shape=X_train.shape[1:]))
-model_e.add(MaxPooling2D(2, 2))
+if model_train:
+    model_e = Sequential()
 
-model_e.add(Conv2D(128, (3, 3), activation="relu"))
-model_e.add(MaxPooling2D(2, 2))
+    model_e.add(Conv2D(256, (3, 3), activation="relu", input_shape=X_train.shape[1:]))
+    model_e.add(MaxPooling2D(2, 2))
 
-model_e.add(Conv2D(64, (3, 3), activation="relu"))
-model_e.add(MaxPooling2D(2, 2))
+    model_e.add(Conv2D(128, (3, 3), activation="relu"))
+    model_e.add(MaxPooling2D(2, 2))
 
-model_e.add(Conv2D(32, (3, 3), activation="relu"))
-model_e.add(MaxPooling2D(2, 2))
+    model_e.add(Conv2D(64, (3, 3), activation="relu"))
+    model_e.add(MaxPooling2D(2, 2))
 
-model_e.add(Flatten())
-model_e.add(Dropout(0.5))
+    model_e.add(Conv2D(32, (3, 3), activation="relu"))
+    model_e.add(MaxPooling2D(2, 2))
 
-model_e.add(Dense(64, activation="relu"))
-model_e.add(Dense(1, activation="sigmoid"))
+    model_e.add(Flatten())
+    model_e.add(Dropout(0.5))
 
-model_e.compile(loss="binary_crossentropy", metrics=["accuracy"], optimizer="adam")
+    model_e.add(Dense(64, activation="relu"))
+    model_e.add(Dense(1, activation="sigmoid"))
 
-model_e.summary()
+    model_e.compile(loss='mean_squared_error', metrics=["accuracy"], optimizer="adam")
 
-history_e = model_e.fit(train_generator_e, epochs=10, validation_data=test_generator_e, shuffle=True,
-                        validation_steps=len(test_generator_e), steps_per_epoch=len(X_train))  # steps_per_epoch = 725
+    model_e.summary()
 
-accuracy = history_e.history['accuracy']
-val_accuracy = history_e.history['val_accuracy']
-loss = history_e.history['loss']
-val_loss = history_e.history['val_loss']
-epochs = range(len(accuracy))
+    # early_stopping = EarlyStopping(monitor='val_loss', mode='min', patience=100)
+    history_e = model_e.fit(train_generator_e, epochs=100, validation_data=(X_test, y_test), shuffle=True,
+                            batch_size=16, steps_per_epoch=len(X_train)//16)  # steps_per_epoch = 725
 
-plt.clf()
+    accuracy = history_e.history['accuracy']
+    val_accuracy = history_e.history['val_accuracy']
+    loss = history_e.history['loss']
+    val_loss = history_e.history['val_loss']
+    epochs = range(len(accuracy))
 
-print("open_closed model accuracy")
-plt.plot(epochs, accuracy, "b", label="trainning accuracy(e)")
-plt.plot(epochs, val_accuracy, "r", label="validation accuracy(e)")
-plt.legend()
-plt.show()
+    plt.clf()
 
-print("open_closed model loss")
-plt.plot(epochs, loss, "b", label="trainning loss(e)")
-plt.plot(epochs, val_loss, "r", label="validation loss(e)")
-plt.legend()
-plt.show()
+    print("open_closed model accuracy")
+    plt.plot(epochs, accuracy, "b", label="trainning accuracy")
+    plt.plot(epochs, val_accuracy, "r", label="validation accuracy")
+    plt.title("OpenCV accuracy(open, closed)")
+    plt.xlabel("epochs")
+    plt.ylabel("accuracy")
+    plt.ylim(0, 1)
+    plt.legend()
+    plt.show()
 
-model_e.save("final_open_closed.model")
+    print("open_closed model loss")
+    plt.plot(epochs, loss, "b", label="trainning loss")
+    plt.plot(epochs, val_loss, "r", label="validation loss")
+    plt.title("OpenCV loss(open, closed)")
+    plt.xlabel("epochs")
+    plt.ylabel("loss")
+    plt.ylim(0, 1)
+    plt.legend()
+    plt.show()
 
-prediction = model_e.predict_classes(X_test)
-print("open_closed model prediction", prediction)
+    model_e.save("(OpenCV)open_closed.model")
+else:
+    model_e = keras.models.load_model("(OpenCV)open_closed.model")
+
+y_prob = model_e.predict(X_test, verbose=0)
+prediction = np.round(y_prob[:, 0]).astype(int)
+# print("open_closed model prediction", prediction)
 
 labels_new = ["Closed", "Open"]
 
+model_e.evaluate(X_test, y_test)
+
 print(classification_report(y_test, prediction, target_names=labels_new))
-# print("***********************")
-# print("open_closed model report", classification_report(np.argmax(y_test), prediction, target_names=labels_new))
